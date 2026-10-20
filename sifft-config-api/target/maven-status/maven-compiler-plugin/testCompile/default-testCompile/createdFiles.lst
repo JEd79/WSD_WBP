@@ -1,0 +1,4 @@
+uk\gov\dvla\siftconfig\WriteConfigControllerTest.class
+uk\gov\dvla\siftconfig\ConfigOptionsControllerTest.class
+uk\gov\dvla\siftconfig\HealthControllerTest.class
+uk\gov\dvla\siftconfig\ReadConfigControllerTest.class

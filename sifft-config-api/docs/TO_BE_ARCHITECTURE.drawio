@@ -1,0 +1,65 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="SIFFT TO-BE" id="sifft-to-be">
+    <mxGraphModel dx="900" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="client" value="Config authors&#10;(Data Platform team / upstream system)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="300" y="40" width="250" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ws" value="NEW: Configuration Web Service (Spring Boot / Java)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0fe;strokeColor=#1a73e8;strokeWidth=2;verticalAlign=top;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="240" y="150" width="370" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="api" value="REST API  /api/v1&#10;read-configs · write-configs · config-options" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1a73e8;" vertex="1" parent="1">
+          <mxGeometry x="265" y="185" width="320" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="val" value="Server-side validation (mirrors SIFFT rules)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1a73e8;" vertex="1" parent="1">
+          <mxGeometry x="265" y="240" width="320" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="cfg" value="Config store (C)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#e8f0fe;strokeColor=#1a73e8;" vertex="1" parent="1">
+          <mxGeometry x="360" y="350" width="130" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="databricks" value="Databricks (existing AS-IS compute)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f3f4;strokeColor=#5f6368;verticalAlign=top;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="240" y="480" width="370" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="nb" value="Databricks notebook / job&#10;Pull → Ingest → Cleanup" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#5f6368;" vertex="1" parent="1">
+          <mxGeometry x="265" y="515" width="200" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="sifft" value="SIFFT library&#10;(imported)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#5f6368;" vertex="1" parent="1">
+          <mxGeometry x="485" y="535" width="100" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="data" value="Inbound DATA&#10;(SFTP → Volume)" style="shape=parallelogram;whiteSpace=wrap;html=1;fillColor=#f1f3f4;strokeColor=#5f6368;" vertex="1" parent="1">
+          <mxGeometry x="40" y="530" width="150" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="store" value="Data store (D)&#10;Delta tables / Unity Catalog" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#f1f3f4;strokeColor=#5f6368;" vertex="1" parent="1">
+          <mxGeometry x="350" y="690" width="150" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e1" value="GET / POST / PUT / DELETE (JSON over HTTPS)" style="endArrow=classic;html=1;fontSize=10;" edge="1" parent="1" source="client" target="api">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" value="imports" style="endArrow=classic;html=1;fontSize=10;" edge="1" parent="1" source="nb" target="sifft">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" value="persists validated config" style="endArrow=classic;html=1;fontSize=10;" edge="1" parent="1" source="val" target="cfg">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" value="read config at job start" style="endArrow=classic;html=1;fontSize=10;" edge="1" parent="1" source="cfg" target="nb">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" value="files" style="endArrow=classic;html=1;fontSize=10;" edge="1" parent="1" source="data" target="nb">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6" value="validated ingest via SIFFT" style="endArrow=classic;html=1;fontSize=10;" edge="1" parent="1" source="nb" target="store">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
