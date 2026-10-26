@@ -1,0 +1,82 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="s1" name="Figure 2 - Strategy Pattern (proposed)">
+    <mxGraphModel dx="1244" dy="764" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ctx" parent="1" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" value="WriteConfigService" vertex="1">
+          <mxGeometry height="110" width="330" x="40" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx1" parent="ctx" style="text;align=left;spacingLeft=6;" value="- formatStrategy : FormatStrategy" vertex="1">
+          <mxGeometry height="20" width="330" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ctxL" parent="ctx" style="line;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="8" width="330" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx2" parent="ctx" style="text;align=left;spacingLeft=6;" value="+ setFormatStrategy(strategy : FormatStrategy) : void" vertex="1">
+          <mxGeometry height="20" width="330" y="58" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx3" parent="ctx" style="text;align=left;spacingLeft=6;" value="+ performWrite(config : WriteConfig) : void" vertex="1">
+          <mxGeometry height="20" width="330" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="iface" parent="1" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=3;" value="&lt;&lt;interface&gt;&gt; FormatStrategy" vertex="1">
+          <mxGeometry height="70" width="300" x="559" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="iface1" parent="iface" style="text;align=left;spacingLeft=6;" value="+ write(config : WriteConfig) : void" vertex="1">
+          <mxGeometry height="20" width="300" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="delta" parent="1" style="swimlane;startSize=26;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" value="DeltaStrategy" vertex="1">
+          <mxGeometry height="60" width="260" x="420" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="delta1" parent="delta" style="text;align=left;spacingLeft=6;" value="+ write(config : WriteConfig) : void" vertex="1">
+          <mxGeometry height="20" width="260" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="parq" parent="1" style="swimlane;startSize=26;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" value="ParquetStrategy" vertex="1">
+          <mxGeometry height="60" width="260" x="700" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="parq1" parent="parq" style="text;align=left;spacingLeft=6;" value="+ write(config : WriteConfig) : void" vertex="1">
+          <mxGeometry height="20" width="260" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="orc" parent="1" style="swimlane;startSize=26;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" value="OrcStrategy" vertex="1">
+          <mxGeometry height="60" width="260" x="980" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="orc1" parent="orc" style="text;align=left;spacingLeft=6;" value="+ write(config : WriteConfig) : void" vertex="1">
+          <mxGeometry height="20" width="260" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="wc" parent="1" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" value="WriteConfig" vertex="1">
+          <mxGeometry height="110" width="300" x="55" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="wc1" parent="wc" style="text;align=left;spacingLeft=6;" value="- targetTable : String" vertex="1">
+          <mxGeometry height="20" width="300" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wc2" parent="wc" style="text;align=left;spacingLeft=6;" value="- format : String" vertex="1">
+          <mxGeometry height="20" width="300" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="wcL" parent="wc" style="line;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="8" width="300" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="wc3" parent="wc" style="text;align=left;spacingLeft=6;" value="+ getFormat() : String ; getTargetTable() : String" vertex="1">
+          <mxGeometry height="20" width="300" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" edge="1" parent="1" source="delta" style="html=1;endArrow=block;endFill=0;dashed=1;" target="iface">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" edge="1" parent="1" source="parq" style="html=1;endArrow=block;endFill=0;dashed=1;" target="iface">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" edge="1" parent="1" source="orc" style="html=1;endArrow=block;endFill=0;dashed=1;" target="iface">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r4" edge="1" parent="1" source="ctx" style="html=1;endArrow=open;startArrow=diamondThin;startFill=0;" target="iface" value="delegates to">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r5" edge="1" parent="1" source="ctx" style="html=1;endArrow=open;startArrow=diamondThin;startFill=0;" target="wc" value="reads format from">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="note" parent="1" style="text;html=1;align=left;verticalAlign=top;fillColor=#fff2cc;strokeColor=#d6b656;spacingLeft=8;spacingTop=6;whiteSpace=wrap;" value="Figure 2 - Strategy pattern applied to the write-format behaviour (proposed design). Realization (dashed, hollow triangle): each concrete strategy implements the FormatStrategy interface. Aggregation (open diamond): the context holds a FormatStrategy and delegates to it, and also holds WriteConfig and reads its stored format to choose the strategy - consistent with the system class diagram." vertex="1">
+          <mxGeometry height="80" width="920" x="23" y="547" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
