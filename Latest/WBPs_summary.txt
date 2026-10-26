@@ -1,0 +1,21 @@
+• CSF2753 (Web Services)
+  - Design + build a RESTful web service that externalises SIFFT's ingestion configuration, implemented as the
+  sifft-config-api Spring Boot prototype.
+  - Designs 6 unique resources (read-configs, write-configs, config-options + sub-resources); implements 5 endpoints
+  (R3, R4, R5, W3, R6), with R4/R5/R6 parameterised and R3/W3/R6 doing server-side processing.
+  - Report sections drafted: Introduction, Web Service Design, JSON I/O, Implementation Reflection,
+  Security/Maintainability/Versioning — all grounded in the real code (36 tests passing offline).
+  - Outstanding: capture ~14 Postman screenshots (one per HTTP status code per endpoint) using the runbook, then compile
+  into one 3,000-word document.
+  - Draft due 28 Oct, full submission 30 Nov.
+
+CSF2702 (Object-Oriented Design)
+  - A report on the same SIFFT system, proposing one improvement — externalising config (the CSF2753 change) and making
+  write behaviour pluggable.
+  - Deliverable 1: a detailed low-level class diagram of the system (8 classes, 10 relationships, reverse-engineered
+  from sifft-config-api).
+  - Deliverable 2: three design patterns (Strategy, Builder, Singleton), each with its own 5–10 class diagram, applied
+  to that improvement.
+  - All six written sections drafted (Introduction, Class Diagram, Class Descriptions, Improvement, Design Patterns,
+  Evaluation — which argues Strategy is most effective).
+  - Due 30 Nov; AI use permitted per Adrian's confirmation; keep that evidence.
