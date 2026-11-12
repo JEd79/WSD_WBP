@@ -1,0 +1,86 @@
+  what I want is a list of prompts I can add to another AI chat which has been used to develop the current version of teh web service. That chatr is aware
+  of constraints so I want any changes to be checked against those constraints.
+
+• Here are ready-to-paste prompts for the other AI chat. Each is self-contained, states the SIFFT-alignment intent, and explicitly instructs that chat to
+  check the change against its known POC constraints before applying — and to push back if there's a conflict.
+
+  I've ordered them by value-per-effort. Each prompt ends with the same guardrail line so the other chat always validates against its constraints.
+
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Prompt 1 — Align allowed-value lists with real SIFFT (single source of truth)
+
+  │ I want the config API's allowed values to match the real SIFFT library's option sets, which are: FORMATS = delta, parquet, orc; MODES = append,
+  overwrite, merge, errorIfExists; SCHEMA_MODES = strict, merge, overwrite; delimiters = comma, pipe, tab (plus "auto"); header = auto, true, false.
+  Currently validateWriteConfig, validateReadConfig, and ConfigOptionsController hardcode narrower lists, and the lists are duplicated. Please (a) introduce
+  a single source of truth for these option lists (e.g. a constants class or record), (b) have both the validators and ConfigOptionsController read from it,
+  and (c) widen the values to match SIFFT above. Before making the change, check it against the project constraints you're already aware of — if the POC was
+  intentionally scoped to delta-only / overwrite+append only, tell me that this conflicts and recommend whether to widen or instead just document the
+  narrowing, rather than applying it blindly.
+
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Prompt 2 — Validate that pattern is a compilable regex
+
+  │ SIFFT matches filenames to configs using the pattern field as a regular expression. Our ReadConfig.pattern is never validated as a compilable regex, so
+  a malformed pattern is accepted and would only fail later in SIFFT. Please add a validation step in validateReadConfig that attempts to compile pattern as
+  a regex and returns a clear validation error (consistent with the existing error style) if it fails. Keep it additive — no changes to the model or
+  architecture. Before applying, verify this is consistent with the project constraints you already know; if there's any reason regex validation shouldn't
+  happen here, flag it instead of proceeding.
+
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Prompt 3 — Add mergeKeys to WriteConfig (only if merge mode is exposed)
+
+  │ If we expose merge as a write mode (per SIFFT's MODES), SIFFT's TableWriteOptions requires merge_keys to be set when mode = merge. Please add an
+  optional mergeKeys field (list of column names) to WriteConfig with getters/setters, and add validation in validateWriteConfig enforcing "mergeKeys is
+  required and non-empty when mode = merge" (and ignored/optional otherwise). This should be purely additive. First check against the known constraints: if
+  merge mode is not in scope for the POC, tell me and skip this change rather than adding an unused field.
+
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Prompt 4 — Add simple TableWriteOptions fields (partitioning, createIfNotExists, addSourceMetadata)
+
+  │ To bring WriteConfig closer to SIFFT's real TableWriteOptions without adding complexity, please add three optional fields with getters/setters:
+  partitionBy (list of column names), createIfNotExists (boolean, default true to match SIFFT), and addSourceMetadata (boolean, default false to match
+  SIFFT). Add light validation only where it's cheap (e.g. partitionBy entries non-blank). Do NOT add source_metadata_columns or extra_metadata — those add
+  testing surface for little POC value. Keep everything additive, no architectural change. Before applying, check against the project constraints you know;
+  if adding fields that aren't demonstrated via Postman is considered out of scope, flag that and let me decide.
+
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Prompt 5 — Surface SIFFT extension→delimiter defaults in the options endpoint (optional polish)
+
+  │ SIFFT derives default delimiters from file extension (.csv → comma, .dat/.out → pipe, .tsv → tab, unknown → "auto"). As optional polish, please extend
+  ConfigOptionsController to also return this extension-to-default-delimiter mapping, reusing the single source of truth from the option-lists change if
+  present. Keep it additive and don't change existing response keys so current Postman screenshots stay valid. Check against the known constraints first; if
+  changing the /config-options response shape risks invalidating already-captured screenshots, flag it and propose returning the mapping under a new key
+  only.
+
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Prompt 6 — Verify build and endpoints after changes (run last)
+
+  │ After applying the agreed changes, please confirm the service still compiles and starts cleanly on the current Spring Boot 4.1.2 / Jackson 3
+  (tools.jackson) stack, and that all 10 existing endpoints still behave as before (GET/GET-by-id/POST/PUT/test/DELETE for read-configs, GET/POST for
+  write-configs, config-impact, config-options). List any endpoint whose request body or response shape changed so I know which Postman screenshots need
+  retaking. Validate the whole result against the project constraints you're aware of and call out any remaining conflicts.
+
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Optional Prompt 7 — Explicitly record the CSVW gap as out-of-scope
+
+  │ For the report, I want to acknowledge a known limitation rather than implement it: SIFFT's authoritative config is the CSVW metadata file (per-column
+  datatypes and constraints like required/min/max/enum/pattern/unique, plus primaryKey and dialect). Our service models the file-to-table "mapping" config
+  instead, not CSVW. Please confirm this characterization is accurate given what you know of the project, and draft a short "Future work / out of scope"
+  paragraph I can paste into the report explaining this gap and why it was deferred (significant new model + validation surface, not required for the POC).
+
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Two notes:
+
+  - Prompts 1–4 are the core SIFFT-alignment set; 5 and 7 are optional; 6 should always be run last.
+  - I kept the "check against your constraints and push back if it conflicts" instruction in every prompt, since that's your main requirement — the other
+  chat should never apply a change that breaks a constraint it knows about without telling you.
+
+  Want me to also produce a single combined prompt (all changes as one batched request) in case you'd rather paste one message instead of six?
