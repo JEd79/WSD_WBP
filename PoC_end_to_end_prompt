@@ -1,0 +1,269 @@
+• Here's the complete, updated copy-paste instruction block. It now reflects your real sample data (3 read configs across 2 write configs), creates all
+  three pipe/comma landing files, documents the overwrite last-wins behaviour, and keeps every verified SIFFT fact and the live-web-service HTTP wiring.
+
+  Copy everything inside the box into the AI assistant on the stand-alone device.
+
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  GOAL
+  Demonstrate a LOCAL end-to-end proof of concept where a Spring Boot "SIFFT config web
+  service" (already present on this machine at Desktop\sifft-config-api) serves ingestion
+  configuration over REST, and a Python driver consumes that configuration over HTTP to
+  drive the installed SIFFT library to ingest files into Delta tables on the local
+  filesystem. No Databricks, no cloud. REDUCED-FUNCTIONALITY PoC: delimited CSV/pipe files
+  only, format=delta, write modes overwrite/append, schema modes overwrite/merge.
+
+  ARCHITECTURE (what we are proving)
+    Spring Boot web service (localhost:8080)                 SIFFT library (local Spark)
+      GET /api/v1/read-configs   ─┐
+      GET /api/v1/write-configs  ─┘──▶ Python driver (HTTP) ──▶ process_file(...)   read+parse
+                                                             ──▶ df.toDF(*columns)   apply cols
+                                                             ──▶ write_table(...)    write Delta
+                                                             ──▶ Delta tables on disk
+
+  VERIFIED FACTS about the installed package `sifft` 0.9.3 (do NOT "correct" these):
+  - There is NO `import sifft`. Installing sifft places TOP-LEVEL modules in the env:
+    file_processing, table_writing, dataframe_validation, file_management.
+    Import directly:
+        from file_processing import process_file
+        from table_writing import write_table, TableWriteOptions
+  - Verified signatures:
+        process_file(file_path, spark, read_options=None, metadata_path=None,
+                     raise_on_error=False, tracking=None, tracking_location=None,
+                     storage_options=None) -> FileProcessingResult
+            (result attrs include: success, dataframe, rows_processed, message)
+        write_table(df, table_name, spark, options=None, source_file_path=None,
+                    file_size=None, raise_on_error=False) -> TableWriteResult
+            (result attrs include: success, rows_written, error)
+        TableWriteOptions(format='delta', mode='append', partition_by=None,
+                          schema_mode='strict', merge_keys=None, create_if_not_exists=True,
+                          add_source_metadata=False, source_metadata_columns=None,
+                          extra_metadata=None)
+  - Apply config column names with:  df = result.dataframe.toDF(*columns)
+  - Write a path-based Delta table (no metastore needed) using table_name of the form:
+        delta.`C:/forward/slash/path`     (backticks required; forward slashes)
+
+  WEB SERVICE (already on this machine)
+    Location:  Desktop\sifft-config-api   (Spring Boot / Maven, Java 17)
+    Endpoints the driver uses:
+        GET http://localhost:8080/api/v1/read-configs
+        GET http://localhost:8080/api/v1/write-configs
+    Config is held in-memory (loaded from bundled JSON in resources/data); writes do not
+    persist, which is fine for this PoC.
+
+    ACTUAL SAMPLE CONFIG served by the service:
+    read-configs.json (3 objects; note "\\." in JSON = regex literal dot "\."):
+      - pattern "Customers\.csv"          delimiter ","  columns customer_id,name,status     -> writeConfigId 123
+      - pattern "Customers_Archive\.csv"  delimiter ","  columns customer_id,name,status     -> writeConfigId 123
+      - pattern "Vehicles\.csv"           delimiter "|"  columns vehicle_id,registration,vehicle_type -> writeConfigId 124
+    write-configs.json (2 objects):
+      - id 123 targetTable "demo_customers" format delta mode overwrite schemaMode overwrite
+      - id 124 targetTable "demo_vehicles"  format delta mode append    schemaMode merge
+
+    BEHAVIOUR NOTE (expected, not a bug): both "Customers\.csv" and "Customers_Archive\.csv"
+    write to the SAME table demo_customers with mode=overwrite. The driver processes them
+    in sequence, so with overwrite the LAST file processed wins — demo_customers will end
+    up containing only that file's rows. This is a consequence of the sample config and is
+    called out here so the report can explain it. (To accumulate both, write config 123
+    would need mode=append; leave as-is for the PoC.)
+
+  =============================================================================
+  STEP 1 — PREREQUISITES (reputable sources only)
+  =============================================================================
+  1. JDK 17 (Temurin) from https://adoptium.net/  — needed by BOTH the web service and
+     Spark. Set JAVA_HOME to the JDK folder; add %JAVA_HOME%\bin to PATH.
+     Verify in a NEW terminal:  java -version   (should report 17.x)
+  2. Python 3.11 (64-bit) from https://www.python.org/downloads/
+  3. WINUTILS (Windows/Hadoop native helper required for local Spark on Windows):
+     - From https://github.com/cdarlint/winutils download winutils.exe AND hadoop.dll
+       from the hadoop-3.3.x/bin/ folder.
+     - Create C:\hadoop\bin and place both files there.
+     - Set env vars (user-level):  HADOOP_HOME = C:\hadoop  ; PATH += C:\hadoop\bin
+     - If Spark still can't load it, also copy hadoop.dll into C:\Windows\System32.
+     - Verify in a NEW terminal:  winutils.exe   (prints usage).
+     (If winutils is problematic, use the LINUX/WSL fallback at the bottom — no winutils.)
+
+  =============================================================================
+  STEP 2 — START THE WEB SERVICE
+  =============================================================================
+  Open a terminal:
+      cd %USERPROFILE%\Desktop\sifft-config-api
+      .\mvnw.cmd spring-boot:run
+  Leave it running. Confirm it is up (new terminal):
+      curl http://localhost:8080/api/v1/read-configs
+      curl http://localhost:8080/api/v1/write-configs
+  You should get JSON arrays back (3 read configs, 2 write configs). Take Postman
+  screenshots of both GETs for the report.
+
+  =============================================================================
+  STEP 3 — CREATE THE PYTHON DRIVER PROJECT
+  =============================================================================
+  Create a folder, e.g. %USERPROFILE%\Desktop\sifft-e2e-poc, with this layout:
+      sifft-e2e-poc/
+        landing/Customers.csv
+        landing/Customers_Archive.csv
+        landing/Vehicles.csv
+        driver.py
+        output/              (created at runtime)
+
+  Set up the environment:
+      cd %USERPROFILE%\Desktop\sifft-e2e-poc
+      python -m venv .venv
+      .venv\Scripts\activate
+      pip install "sifft[pyspark3]" requests
+
+  FILE: landing\Customers.csv  (comma-delimited; matches pattern "Customers\.csv")
+  customer_id,name,status
+  1,Alice,active
+  2,Bob,inactive
+  3,Charlie,active
+
+  FILE: landing\Customers_Archive.csv  (comma-delimited; matches "Customers_Archive\.csv")
+  customer_id,name,status
+  10,Old Alice,inactive
+  11,Old Bob,inactive
+
+  FILE: landing\Vehicles.csv  (PIPE-delimited; matches "Vehicles\.csv")
+  vehicle_id|registration|vehicle_type
+  1|AB12 CDE|car
+  2|FG34 HIJ|van
+  3|KL56 MNO|motorcycle
+
+  FILE: driver.py  (write EXACTLY this)
+  --------------------------------------------------------------------------------
+  import os, re
+  import requests
+  from pyspark.sql import SparkSession
+  from delta import configure_spark_with_delta_pip
+  from file_processing import process_file
+  from table_writing import write_table, TableWriteOptions
+
+  BASE = os.path.dirname(os.path.abspath(__file__))
+  API = os.environ.get("CONFIG_API", "http://localhost:8080")
+
+  def fetch_configs():
+      """Read configuration from the LIVE web service over HTTP."""
+      reads = requests.get(f"{API}/api/v1/read-configs", timeout=30).json()
+      writes_list = requests.get(f"{API}/api/v1/write-configs", timeout=30).json()
+      writes = {w["id"]: w for w in writes_list}
+      print(f"Fetched {len(reads)} read config(s) and {len(writes)} write config(s) from {API}")
+      return reads, writes
+
+  def make_spark():
+      builder = (SparkSession.builder.appName("sifft-e2e-poc").master("local[1]")
+          .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+          .config("spark.sql.catalog.spark_catalog",
+                  "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+          .config("spark.ui.enabled", "false")
+          .config("spark.sql.shuffle.partitions", "1"))
+      spark = configure_spark_with_delta_pip(builder).getOrCreate()
+      spark.sparkContext.setLogLevel("ERROR")
+      return spark
+
+  def main():
+      reads, writes = fetch_configs()
+      spark = make_spark()
+      landing = os.path.join(BASE, "landing")
+      files = [os.path.join(landing, f) for f in os.listdir(landing)]
+      written = []
+      for rc in reads:
+          wc = writes.get(rc.get("writeConfigId"))
+          if not wc:
+              print("SKIP read id", rc.get("id"), "- no linked write config"); continue
+          # 1) match a landing file against the config's regex pattern
+          matched = [p for p in files if re.fullmatch(rc["pattern"], os.path.basename(p))]
+          if not matched:
+              print("UNMATCHED pattern:", rc["pattern"]); continue
+          path = matched[0]
+          # 2) READ via SIFFT using the read config
+          header = rc["header"] if rc.get("header") in ("true", "false") else "true"
+          res = process_file(path, spark,
+                             read_options={"delimiter": rc["delimiter"], "header": header})
+          print("PROCESS", os.path.basename(path), "-> table", wc["targetTable"],
+                "success=", res.success, "rows=", res.rows_processed)
+          if not res.success or res.rows_processed == 0:
+              continue
+          # 3) apply column names from config
+          df = res.dataframe.toDF(*rc["columns"])
+          # 4) WRITE via SIFFT using the write config (path-based Delta table)
+          out = os.path.join(BASE, "output", wc["targetTable"]).replace("\\", "/")
+          opts = TableWriteOptions(format=wc["format"], mode=wc["mode"],
+                                   schema_mode=wc["schemaMode"], add_source_metadata=True)
+          wr = write_table(df, f"delta.`{out}`", spark, opts, source_file_path=path)
+          print("WRITE", wc["targetTable"], "mode=", wc["mode"],
+                "success=", wr.success, "rows_written=", wr.rows_written)
+          if not wr.success:
+              print("WRITE error:", wr.error); continue
+          written.append((wc["targetTable"], out))
+      # 5) read each written Delta table back to prove it exists
+      print("\n--- READBACK (final table contents) ---")
+      for name, out in dict(written).items():  # de-dup table names; show final state
+          back = spark.read.format("delta").load(out)
+          print(f"TABLE {name}: count=", back.count())
+          back.show(truncate=False)
+      spark.stop()
+      print("E2E_PoC_DONE" if written else "E2E_PoC_DONE (no tables written)")
+
+  if __name__ == "__main__":
+      main()
+  --------------------------------------------------------------------------------
+
+  =============================================================================
+  STEP 4 — RUN THE END-TO-END PoC
+  =============================================================================
+  With the web service STILL RUNNING in its own terminal, in the driver terminal:
+      cd %USERPROFILE%\Desktop\sifft-e2e-poc
+      .venv\Scripts\activate
+      set PYTHONUTF8=1
+      python driver.py
+
+  EXPECTED SUCCESS OUTPUT (capture for the report):
+      Fetched 3 read config(s) and 2 write config(s) from http://localhost:8080
+      PROCESS Customers.csv -> table demo_customers success= True rows= 3
+      WRITE demo_customers mode= overwrite success= True rows_written= 3
+      PROCESS Customers_Archive.csv -> table demo_customers success= True rows= 2
+      WRITE demo_customers mode= overwrite success= True rows_written= 2
+      PROCESS Vehicles.csv -> table demo_vehicles success= True rows= 3
+      WRITE demo_vehicles mode= append success= True rows_written= 3
+
+      --- READBACK (final table contents) ---
+      TABLE demo_customers: count= 2        <-- 2, not 5: overwrite means LAST file wins
+      (rows from Customers_Archive.csv, plus dp_metadata_* lineage columns)
+      TABLE demo_vehicles: count= 3
+      (3 vehicle rows, plus dp_metadata_* lineage columns)
+      E2E_PoC_DONE
+
+    (The demo_customers count of 2 is expected — see the BEHAVIOUR NOTE above. The order
+     in which the two Customers files are processed determines which set of rows remains;
+     either way it demonstrates overwrite semantics correctly.)
+
+  Delta tables appear at:
+      output\demo_customers\_delta_log\   (+ parquet data files)
+      output\demo_vehicles\_delta_log\    (+ parquet data files)
+
+  =============================================================================
+  ACCEPTANCE CRITERIA (confirm ALL)
+  =============================================================================
+  [ ] JDK 17 on PATH (java -version works)
+  [ ] Web service responds on /api/v1/read-configs (3 items) and /write-configs (2 items)
+  [ ] Fresh venv with sifft[pyspark3] + requests installed
+  [ ] Spark starts WITHOUT the HADOOP_HOME/winutils error
+  [ ] driver.py prints: fetched 3/2 configs; PROCESS+WRITE success=True for all 3 files;
+      READBACK shows demo_customers (count 2) and demo_vehicles (count 3)
+  [ ] output\demo_customers\_delta_log\ and output\demo_vehicles\_delta_log\ both exist
+      with commit + parquet files
+  [ ] Provide: (a) Postman screenshots of the two GETs, (b) driver console output,
+      (c) directory listing of output\demo_customers\ and output\demo_vehicles\
+
+  =============================================================================
+  LINUX / WSL FALLBACK (use ONLY if winutils is a problem — no winutils needed)
+  =============================================================================
+  - Install Ubuntu (or `wsl --install -d Ubuntu`), then:
+      sudo apt update && sudo apt install -y openjdk-17-jdk python3.11 python3.11-venv
+  - Keep the web service running on Windows and point the driver at it, OR run the service
+    inside Linux with ./mvnw spring-boot:run. Set the API base if needed:
+      export CONFIG_API=http://localhost:8080
+      (or export CONFIG_API=http://<windows-host-ip>:8080 if the service stays on Windows)
+  - Create the venv, pip install "sifft[pyspark3]" requests, use the SAME driver.py,
+    run: PYTHONUTF8=1 python driver.py
+  - Everything else (sample files, expected output) is identical.
