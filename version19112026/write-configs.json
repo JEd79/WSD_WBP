@@ -1,0 +1,17 @@
+
+[
+  {
+    "id": 123,
+    "targetTable": "demo_customers",
+    "format": "delta",
+    "mode": "overwrite",
+    "schemaMode": "overwrite"
+  },
+  {
+    "id": 124,
+    "targetTable": "demo_vehicles",
+    "format": "delta",
+    "mode": "append",
+    "schemaMode": "merge"
+  }
+]

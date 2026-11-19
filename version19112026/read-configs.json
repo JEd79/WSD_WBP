@@ -1,0 +1,39 @@
+
+[
+  {
+    "id": 101,
+    "pattern": "Customers\\.csv",
+    "delimiter": ",",
+    "header": "auto",
+    "columns": [
+      "customer_id",
+      "name",
+      "status"
+    ],
+    "writeConfigId": 123
+  },
+  {
+    "id": 102,
+    "pattern": "Customers_Archive\\.csv",
+    "delimiter": ",",
+    "header": "auto",
+    "columns": [
+      "customer_id",
+      "name",
+      "status"
+    ],
+    "writeConfigId": 123
+  },
+  {
+    "id": 103,
+    "pattern": "Vehicles\\.csv",
+    "delimiter": "|",
+    "header": "true",
+    "columns": [
+      "vehicle_id",
+      "registration",
+      "vehicle_type"
+    ],
+    "writeConfigId": 124
+  }
+]
